@@ -5,55 +5,16 @@
  * @since Oct 19, 2021
  * @copyright 2021 - 2022 University of Kansas
  */
-import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
-import { useCkEditorConfig } from '../../../common/CkEditorProvider';
 
 // NOTE: We use editor from source (not a build)!
-import WProofreader from '@webspellchecker/wproofreader-ckeditor5/src/wproofreader';
 import ClassicEditor from '@ckeditor/ckeditor5-editor-classic/src/classiceditor';
 import InlineEditor from '@ckeditor/ckeditor5-editor-inline/src/inlineeditor';
-import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import PropTypes from 'prop-types';
 import defaultEditorConfig from './editorConfig';
 
 import Delayed from './Delayed';
-// import CKEditorInspector from '@ckeditor/ckeditor5-inspector';
-
-/**
- * React functional component with the custom CKEditor
- * which will be used across the application.
- * This is to build the CKEditor from ClassicEditor source. If the type is 'inline',
- * it will be from InlineEditor source.
- *
- * @inner
- * @memberof SharedComponents
- *
- * @component
- * @namespace CKEditorBase
- * @param {{fieldName: string, data: string, type: string, onReady: function,
- * onChange: function, onBlur: function, onFocus: function,
- * config: object, placeholder: string, className: string, dataTestId: string}} param passed in parameters
- * @param {string} param.fieldName - name of the field for the CKEditor
- * @param {string} param.data - inital data that will be displayed in the CKEditor
- * @param {string} param.type - indicates if it is inline editor or classic editor. Default is classic.
- * @param {function} param.onReady - function that need to be called onReady event
- * @param {function} param.onChange - function that need to be called onChange event
- * @param {function} param.onBlur - function that need to be called onBlur event
- * @param {function} param.onFocus - function that need to be called onFocus event
- * @param {object} param.config - optional, custom config object that can add/modify/override the default configuration only for the respective editor.
- * @param {string} param.placeholder - optional, string will show as the placeholer for the editor
- * @param {string} param.className - optional, apply class name to the editor container that can use for styling/identification/other development purpose
- * @param {string} param.dataTestId - optional, test id to the editor container for testing purpose
- * @param {boolean} param.displayEditorCount - optional, is the word/char count details needs to displayed or not for the editor, default is true
- * @param {number} param.delay - optional, represent the delay in loading the editor, has the minimum delay as default
- * @param {boolean} param.trim - optional, it will return space, if space is typed in ckeditor.
-
- * @return {Component} - Classic CKEditor with default configuration
- *
- * @example
- * <CKEditorBase data={data} onChange= {onUpdate}/>
- */
 
 const CKEditorBase = forwardRef(function CKEditorBase({
   fieldName = null,
@@ -63,28 +24,16 @@ const CKEditorBase = forwardRef(function CKEditorBase({
   onChange,
   onBlur,
   onFocus = () => {},
-  config = {},
-  placeholder,
   className,
   dataTestId,
   displayEditorCount = true,
   delay = 0.005,
   trim = true,
-  id,
-  itemRef,
   ...props
 }, ckEditorRef) {
-  const scale = useScale();
   const ref = useRef(null);
   let configuration = defaultEditorConfig;
   let options = {};
-
-  /**
-   * Grabs data (passed in from CP) from the CKEditorConfig to use when interacting with the editor
-   */
-  const ckEditorConfig = useCkEditorConfig(); // uses the CkEditor Context object
-  const {onShowMediaLibrary} = ckEditorConfig; // decontructs functions that are needed to interact with CP
-
 
   const [editor, setEditor] = useState(null);
   const [ready, setReady] = useState(true);
@@ -112,9 +61,6 @@ const CKEditorBase = forwardRef(function CKEditorBase({
       }
     }
   }
-
-   const [wordsCount, setWordsCount] = useState(0);
-  const [charsCount, setCharsCount] = useState(0);
 
   if (trim === false) {
     options.trim = 'none';
@@ -164,46 +110,6 @@ const CKEditorBase = forwardRef(function CKEditorBase({
     };
   }, [editor?.id]);
 
-  useLayoutEffect(() => {
-    // TODO: when we will be working on the backlog issue that to support to add math accessibility inside the test accessibility, then this can be handled/removed later.
-    let observer;
-    if (ref?.current && editor) {
-      const type = editor?.config?.get('insertResponse')?.type;
-      if (type) { // only for the insert response based editor
-        observer = useMutationObserver(ref, () => { // nested text accessibilty has delay in load, so has to wait before the check
-          if (type) {
-            if (type === 'selectText') { // nested element accessibilty for select text should support inline, if it not contain MATH elements
-              const parentElements = ref?.current?.querySelectorAll('.nested-element-accessibility:not(.nested-accessibility-inline-response)') || [];
-              Array.from(parentElements)?.map(textElement => {
-                if (textElement?.querySelectorAll('.math-tex')?.length === 0) { // Check is it non Math elemnts
-                  textElement.classList?.add('nested-accessibility-inline-response');
-                }
-              });
-            } else {
-              const parentElements = ref?.current?.querySelectorAll('.text-tag-accessibility, .nested-tag-accessibility') || [];
-              Array.from(parentElements)?.map(textElement => {
-                const childElements = textElement.querySelectorAll('.gap-match-placeholder, .constructedResponse-placeholder, .cked-highlight');
-                // Check if the 'nested-element-accessibility' class is already present
-                const containsClass = textElement.classList?.contains('nested-element-accessibility');
-                Array.from(childElements)?.map(element => {
-                  if (element && !containsClass) { // add appropriate the class to support the TTS hightlight styles
-                    textElement.classList?.add('nested-element-accessibility');
-                  }
-                });
-              });
-            }
-          }
-        }, { attributes: true, childList: true, subtree: true, attributeFilter: ['class', 'data-access-id'], attributeOldValue: true });
-      }
-    }
-    return () => {
-      if (observer) {
-        observer.disconnect(); // disconnect observer when unmount
-      }
-    };
-  }, [ref.current, editor]);
-
-
   /**
    * seems CK-Editor does not support dynamic configuration, so the CK-Editor will reinitilized when we change to the new keyboard.
    * Resets the CK-Editor when in the preview scale is changed, so it can handle the re-position view like Math Editor
@@ -212,12 +118,14 @@ const CKEditorBase = forwardRef(function CKEditorBase({
     if (configuration.mathLive?.keyboardType && ready) {
       setReady(false); // When a new keyboard layout is passed, CK-Editor will destroyed
     }
-  }, [configuration.mathLive?.keyboardType, scale]);
+  }, [configuration.mathLive?.keyboardType]);
   useEffect(() => {
     if (configuration.mathLive?.keyboardType && !ready) {
       setReady(true); // When a new keyboard layout is passed, CK-Editor will initialized again
     }
   }, [ready]);
+
+  console.log('CKEditorBase', { data, type, onReady, onChange, onBlur, onFocus, className, dataTestId, displayEditorCount, delay, trim, ...props });
 
   return (
     <div
@@ -232,7 +140,6 @@ const CKEditorBase = forwardRef(function CKEditorBase({
         {ready
           ? <CKEditor
             {...props}
-            ref={itemRef}
             editor={type === 'inline' ? InlineEditor : ClassicEditor}
             config={{ ...configuration }}
             data={data}
@@ -277,8 +184,6 @@ const CKEditorBase = forwardRef(function CKEditorBase({
         {
           displayEditorCount &&
           <div className={type === 'inline' ? 'wordscount-inline' : 'wordscount'}>
-            <span> Words : {wordsCount}, </span>
-            <span>Characters : {charsCount} </span>
           </div>
         }
       </Delayed>

@@ -4,11 +4,11 @@ const webpack = require('webpack');
 
 const config = {
   name: 'js',
-  entry: './src/index.jsx',
+  entry: './src/index.js',
   mode: 'production',
   output: {
     path: path.resolve(__dirname, './dist'),
-    filename: 'index.jsx',
+    filename: 'index.js',
     libraryTarget: 'commonjs2',
   },
   plugins: [

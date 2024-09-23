@@ -178,7 +178,6 @@ const editorConfig = {
     SpecialCharacters,
     SpecialCharactersArrows,
     SpecialCharactersEssentials,
-    specialCharactersExtended,
     SpecialCharactersMathematical,
     SpecialCharactersText,
     Strikethrough,
