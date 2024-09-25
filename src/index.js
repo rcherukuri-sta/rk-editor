@@ -1,13 +1,7 @@
-/* eslint-disable react/jsx-filename-extension */
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
+import CKEditorBase from './components/common/editors/ckeditor/CKEditorBase';
 
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-    <App />
-);
-
-
-
+// NPM module entry point and all the exports that are
+// exposed to external applications will be defined here.
+export {
+    CKEditorBase,
+};
