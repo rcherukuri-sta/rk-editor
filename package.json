@@ -1,5 +1,5 @@
 {
-  "name": "cke-8201",
+  "name": "rk-editor",
   "version": "2.2.11",
   "description": "All create and preview components related to items",
   "main": "dist/index.js",
